@@ -12,6 +12,7 @@ from authn.views.openid import openid_authorize, openid_issue_token, openid_revo
     openid_well_known_configuration, openid_well_known_jwks
 from authn.views.patreon import patreon_sync, patreon_sync_callback
 from badges.views import create_badge_for_post, create_badge_for_comment
+from clickers.api import api_clicker
 from club import features
 from comments.api import api_list_post_comments
 from comments.views import create_comment, edit_comment, delete_comment, show_comment, upvote_comment, \
@@ -22,7 +23,8 @@ from landing.views import landing
 from godmode.views.main import godmode, godmode_list_model, godmode_edit_model, godmode_delete_model, \
     godmode_create_model, godmode_show_page, godmode_action
 from misc.fun import mass_note
-from misc.views import stats, network, robots, generate_ical_invite, generate_google_invite, show_achievement
+from misc.views import stats, network, robots, generate_ical_invite, generate_google_invite, show_achievement, \
+    crew, write_to_crew
 from rooms.views import redirect_to_room_chat, list_rooms, toggle_room_subscription, toggle_room_mute
 from notifications.views import render_weekly_digest, email_unsubscribe, email_confirm, email_digest_switch, \
     link_telegram
@@ -45,7 +47,8 @@ from bookmarks.views import bookmarks
 from search.views import search
 from tickets.views import stripe_ticket_sale_webhook
 
-from users.api import api_profile, api_profile_by_telegram_id, api_profile_tags
+from users.api import api_profile, api_profile_by_telegram_id, api_profile_tags, api_profile_achievements, \
+    api_profile_badges, api_profile_badge
 from users.views.delete_account import request_delete_account, confirm_delete_account
 from users.views.friends import api_friend, friends
 from users.views.messages import on_review, rejected, banned
@@ -95,8 +98,11 @@ urlpatterns = [
 
     path("user/<slug:user_slug>/", profile, name="profile"),
     path("user/<slug:user_slug>.json", api_profile, name="api_profile"),
+    path("user/<slug:user_slug>.badge.html", api_profile_badge, name="api_profile_badge"),
     path("user/by_telegram_id/<slug:telegram_id>.json", api_profile_by_telegram_id, name="api_profile_by_telegram_id"),
     path("user/<slug:user_slug>/tags.json", api_profile_tags, name="api_profile_tags"),
+    path("user/<slug:user_slug>/achievements.json", api_profile_achievements, name="api_profile_achievements"),
+    path("user/<slug:user_slug>/badges.json", api_profile_badges, name="api_profile_badges"),
     path("user/<slug:user_slug>/comments/", profile_comments, name="profile_comments"),
     path("user/<slug:user_slug>/posts/", profile_posts, name="profile_posts"),
     path("user/<slug:user_slug>/badges/", profile_badges, name="profile_badges"),
@@ -191,6 +197,10 @@ urlpatterns = [
     path("network/", network, name="network"),
     path("network/chat/<slug:chat_id>/", RedirectView.as_view(url="/room/%(chat_id)s/chat/", permanent=True),
          name="network_chat"),
+    path("crew/", crew, name="crew"),
+    path("crew/write/<slug:crew>/", write_to_crew, name="write_to_crew"),
+
+    path("clickers/<str:clicker_id>.json", api_clicker, name="api_clicker"),
 
     # admin features
     path("godmode/", godmode, name="godmode_settings"),

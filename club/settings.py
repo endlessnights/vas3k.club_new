@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "godmode.apps.GodmodeConfig",
     "invites.apps.InvitesConfig",
     "tickets.apps.TicketsConfig",
+    "clickers.apps.ClickersConfig",
     "ai.apps.AiConfig",
     "simple_history",
     "django_q",
@@ -77,7 +78,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "club.context_processors.settings_processor",
                 "club.context_processors.features_processor",
-                "authn.context_processors.users.me",
+                "users.context_processors.users.me",
                 "posts.context_processors.feed.rooms",
                 "posts.context_processors.feed.ordering",
             ]
@@ -105,11 +106,9 @@ LOGGING = {
 }
 
 # Database
-# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("POSTGRES_DB") or "vas3k_club",
         "USER": os.getenv("POSTGRES_USER") or "postgres",
         "PASSWORD": os.getenv("POSTGRES_PASSWORD") or "",
@@ -118,8 +117,21 @@ DATABASES = {
     }
 }
 
+if bool(os.getenv("POSTGRES_USE_POOLING")):
+    DATABASES["default"]["OPTIONS"] = {
+        "pool": {
+            "min_size": 5,
+            "max_size": 15,
+            "timeout": 10, # fail in 10 sec under load
+            "max_idle": 300, # close idle after 5 min
+        }
+    }
+else:
+    DATABASES["default"]["CONN_MAX_AGE"] = 0
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+
+
 # Internationalization
-# https://docs.djangoproject.com/en/3.0/topics/i18n/
 
 LANGUAGE_CODE = "ru"
 TIME_ZONE = "UTC"
@@ -128,7 +140,6 @@ USE_L10N = True
 USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "frontend/static")]
@@ -158,8 +169,10 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "TIMEOUT": 3600,  # 5 hours max
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,
         }
     }
 }
@@ -254,6 +267,8 @@ OG_IMAGE_GENERATOR_DEFAULTS = {
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_BOT_URL = os.getenv("TELEGRAM_BOT_URL") or "https://t.me/vas3k_club_bot"
 TELEGRAM_ADMIN_CHAT_ID = os.getenv("TELEGRAM_ADMIN_CHAT_ID")
+TELEGRAM_VIBES_CHAT_ID = -1002158547445
+TELEGRAM_PARLIAMENT_CHAT_ID = -1001148097898
 TELEGRAM_CLUB_CHANNEL_URL = os.getenv("TELEGRAM_CLUB_CHANNEL_URL")
 TELEGRAM_CLUB_CHANNEL_ID = os.getenv("TELEGRAM_CLUB_CHANNEL_ID")
 TELEGRAM_CLUB_CHAT_URL = os.getenv("TELEGRAM_CLUB_CHAT_URL")
@@ -303,7 +318,34 @@ VALUES_GUIDE_URL = "https://vas3k.club/post/values/"
 POSTING_GUIDE_URL = "https://vas3k.club/post/10447/"
 CHATS_GUIDE_URL = "https://vas3k.club/post/9542/"
 PEOPLE_GUIDE_URL = "https://vas3k.club/post/2584/"
-PARLIAMENT_GUIDE_URL = "https://vas3k.club/post/12870/"
+
+CREWS = {
+    "vibes": {
+        "title": "Написать в Министерство Вайбов",
+        "telegram_chat_id": TELEGRAM_VIBES_CHAT_ID,
+        "reasons": [
+            {"code": "vibe", "text": "Делюсь вайбом!"},
+            {"code": "novibe", "text": "Кто-то не вайбит!"},
+            {"code": "interesting", "text": "Принёс вам интересненькое"},
+            {"code": "other", "text": "Другое"},
+        ]
+    },
+    "parliament": {
+        "title": "Написать в Парламент",
+        "telegram_chat_id": TELEGRAM_PARLIAMENT_CHAT_ID,
+        "reasons": [
+            {"code": "achievement", "text": "Выдать или получить ачивку"},
+            {"code": "activity", "text": "Хочу организовать активность"},
+            {"code": "idea", "text": "У меня есть идея для Клуба!"},
+            {"code": "other", "text": "Я только спросить"},
+        ]
+    },
+    "events": {
+        "title": "Написать оргам Вастрик Ивентов",
+        "telegram_chat_id": -1003410014342,
+    }
+}
+
 
 SUPPORTED_TIME_ZONES = [
 	("UTC", "по UTC"),

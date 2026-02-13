@@ -1,13 +1,10 @@
 import telegram
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.urls import reverse
-from django_q.tasks import async_task
 
 from club import settings
-from notifications.telegram.common import Chat, send_telegram_message, render_html_message, CLUB_ONLINE, ADMIN_CHAT
-from comments.models import Comment
 from common.regexp import USERNAME_RE
+from notifications.telegram.common import send_telegram_message, Chat, render_html_message, CLUB_ONLINE
+from notifications.telegram.moderation import notify_moderators_on_mention
 from posts.models.post import Post
 from posts.models.subscriptions import PostSubscription
 from users.models.friends import Friend
@@ -15,15 +12,7 @@ from users.models.mute import UserMuted
 from users.models.user import User
 
 
-@receiver(post_save, sender=Comment)
-def create_or_update_comment(sender, instance, created, **kwargs):
-    if not created:
-        return None  # we're not interested in comment updates
-
-    async_task(async_create_or_update_comment, instance)
-
-
-def async_create_or_update_comment(comment):
+def notify_on_comment_created(comment):
     notified_user_ids = set()
     muted_author_user_ids = set(
         UserMuted.who_muted_user(comment.author_id).values_list("user_from_id", flat=True)
@@ -104,10 +93,7 @@ def async_create_or_update_comment(comment):
     # parse @nicknames and notify their users
     for username in USERNAME_RE.findall(comment.text):
         if username == settings.MODERATOR_USERNAME:
-            send_telegram_message(
-                chat=ADMIN_CHAT,
-                text=render_html_message("moderator_mention.html", comment=comment),
-            )
+            notify_moderators_on_mention(comment)
             continue
 
         user = User.objects.filter(slug=username).first()

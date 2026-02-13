@@ -56,7 +56,7 @@ def profile(request, user_slug):
     achievements = UserAchievement.objects.filter(user=user).select_related("achievement")
     posts = Post.objects_for_user(request.me)\
         .filter(Q(author=user) | Q(coauthors__contains=[user.slug]))\
-        .exclude(type__in=[Post.TYPE_INTRO, Post.TYPE_PROJECT, Post.TYPE_WEEKLY_DIGEST])\
+        .exclude(type__in=[Post.TYPE_INTRO, Post.TYPE_WEEKLY_DIGEST])\
         .order_by("-published_at")
 
     if request.me:
@@ -73,7 +73,7 @@ def profile(request, user_slug):
         note = None
 
     moderator_notes = []
-    if request.me and request.me.is_moderator:
+    if request.me and (request.me.is_moderator or request.me.is_curator):
         moderator_notes = UserNote.objects.filter(user_to=user)\
             .exclude(user_from=request.me)\
             .select_related("user_from")\

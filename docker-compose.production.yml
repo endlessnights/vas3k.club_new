@@ -18,6 +18,7 @@ services:
       - POSTGRES_DB=vas3k_club
       - POSTGRES_USER=vas3k
       - POSTGRES_HOST=host.docker.internal
+      - POSTGRES_USE_POOLING=1
       - POSTGRES_PASSWORD
       - EMAIL_HOST
       - EMAIL_PORT
@@ -42,6 +43,21 @@ services:
 
   queue:
     <<: *app
+    environment:
+      - MODE=production
+      - PYTHONUNBUFFERED=1
+      - DEBUG=false
+      - APP_HOST=https://vas3k.club
+      - MEDIA_UPLOAD_URL=https://i.vas3k.club/upload/
+      - REDIS_DB=0
+      - REDIS_HOST=redis
+      - POSTGRES_DB=vas3k_club
+      - POSTGRES_USER=vas3k
+      - POSTGRES_HOST=host.docker.internal
+      - POSTGRES_PASSWORD
+      - EMAIL_HOST
+      - EMAIL_PORT
+      - DEFAULT_FROM_EMAIL
     command: make docker-run-queue
     container_name: club_queue
     networks:
